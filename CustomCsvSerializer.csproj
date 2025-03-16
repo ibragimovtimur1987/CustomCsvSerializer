@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="System.Management" Version="10.0.0-preview.1.25080.5" />
     </ItemGroup>
 
 </Project>

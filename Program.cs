@@ -1,55 +1,63 @@
 ﻿using System.Diagnostics;
+using System.Management;
 using CustomCsvSerializer;
 using Newtonsoft.Json;
 
+GetEnvInfo();
 
-// Подготовка данных
-F testObject = F.Get();
+var testObject = F.Get();
 int iterations = 100000;
 
-// Сериализация с использованием собственного класса
-Stopwatch stopwatch = new Stopwatch();
+TestSerializeDeserialize("Мой рефлекшен:", iterations, testObject, CsvSerializer.Serialize, CsvSerializer.Deserialize<F>);
+TestSerializeDeserialize("Cтандартный механизм (NewtonsoftJson):", iterations, testObject, JsonConvert.SerializeObject, JsonConvert.DeserializeObject<F>);
 
-// Сериализация
-stopwatch.Start();
-for (int i = 0; i < iterations; i++)
+void GetEnvInfo()
 {
-    CsvSerializer.Serialize(testObject);
+    Console.WriteLine("Версия ОС: " + Environment.OSVersion);
+    Console.WriteLine("Количество процессоров: " + Environment.ProcessorCount);
+    
+    var searcherCpu = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
+    foreach (var o in searcherCpu.Get())
+    {
+        var obj = (ManagementObject)o;
+        Console.WriteLine("Процессор: " + obj["Name"]);
+    }
+    
+    var searcherMemory = new ManagementObjectSearcher("SELECT * FROM Win32_PhysicalMemory");
+    ulong totalMemory = 0;
+    foreach (var o in searcherMemory.Get())
+    {
+        var obj = (ManagementObject)o;
+        totalMemory += (ulong)obj["Capacity"];
+    }
+
+    Console.WriteLine("Объем оперативной памяти: " + totalMemory / (1024 * 1024) + " МБ");
 }
 
-stopwatch.Stop();
-Console.WriteLine($"Время на сериализацию (CSV): {stopwatch.ElapsedMilliseconds} мс");
-
-// Десериализация
-string csv = CsvSerializer.Serialize(testObject);
-stopwatch.Restart();
-for (int i = 0; i < iterations; i++)
+void TestSerializeDeserialize(string nameTest, int iterations1, F testObject1, Func<F, string> funcSerialize, Func<string, F> funcDeserialize)
 {
-    CsvSerializer.Deserialize<F>(csv);
+    Console.WriteLine(nameTest);
+    
+    Stopwatch stopwatch = new Stopwatch();
+
+    stopwatch.Start();
+
+    for (int i = 0; i < iterations1; i++)
+    {
+        funcSerialize(testObject);
+    }
+
+    stopwatch.Stop();
+
+    string data = funcSerialize(testObject1);
+    Console.WriteLine($"Время на сериализацию {data}: {stopwatch.ElapsedMilliseconds} мс");
+
+    stopwatch.Restart();
+    for (int i = 0; i < iterations1; i++)
+    {
+        funcDeserialize(data);
+    }
+
+    stopwatch.Stop();
+    Console.WriteLine($"Время на десериализацию : {stopwatch.ElapsedMilliseconds} мс");
 }
-
-stopwatch.Stop();
-Console.WriteLine($"Время на десериализацию (CSV): {stopwatch.ElapsedMilliseconds} мс");
-
-// Сравнение с Newtonsoft.Json
-string json = String.Empty;
-
-// Сериализация JSON
-stopwatch.Restart();
-for (int i = 0; i < iterations; i++)
-{
-    json = JsonConvert.SerializeObject(testObject);
-}
-
-stopwatch.Stop();
-Console.WriteLine($"Время на сериализацию (JSON): {stopwatch.ElapsedMilliseconds} мс");
-
-// Десериализация JSON
-stopwatch.Restart();
-for (int i = 0; i < iterations; i++)
-{
-    var obj = JsonConvert.DeserializeObject<F>(json);
-}
-
-stopwatch.Stop();
-Console.WriteLine($"Время на десериализацию (JSON): {stopwatch.ElapsedMilliseconds} мс");

@@ -4,19 +4,19 @@ public class CsvSerializer
 {
     public static string Serialize<T>(T obj)
     {
-        var properties = typeof(T).GetFields(); // Получаем поля класса
+        var properties = typeof(T).GetFields();
         var values = new List<string>();
 
         foreach (var property in properties)
         {
-            if (property.FieldType == typeof(int)) // Можно добавлять проверки для других типов
+            if (property.FieldType == typeof(int))
             {
                 var value = property.GetValue(obj)?.ToString();
                 values.Add(value);
             }
         }
 
-        return string.Join(",", values); // Формируем строку CSV
+        return string.Join(",", values);
     }
 
     public static T Deserialize<T>(string csv) where T : new()
